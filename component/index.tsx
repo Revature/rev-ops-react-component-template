@@ -2,99 +2,63 @@ import { useState } from "react";
 import type { ProcessComponentProps } from "./types";
 
 /**
- * Custom Process Form Component
+ * Custom Process Component
  *
- * Edit this file to build your process form UI.
- * The component receives props defined in types.ts.
+ * This component is fully self-contained. It receives record data,
+ * field definitions, and execution context via props. Use fetch()
+ * for API calls (same browser session = same auth cookies).
  *
  * Available props:
- *   record           — current record data
- *   fields           — field definitions for this process
- *   context          — execution context (objectApiName, processApiName, etc.)
- *   preProcessResult — output from pre-process step (if any)
- *   onSubmit         — call with form data to submit
+ *   record           — full record data from DB
+ *   fields           — field definitions for the object
+ *   context          — execution metadata (objectApiName, processApiName, etc.)
+ *   preProcessResult — result from server-side pre-process (null if none)
+ *   onComplete       — call when done (optionally pass result data)
  *   onCancel         — call to cancel the process
+ *   onError          — call to signal an error
  */
-export default function ProcessForm({
+export default function MyComponent({
+  record,
   fields,
+  context,
   preProcessResult,
-  onSubmit,
+  onComplete,
   onCancel,
+  onError,
 }: ProcessComponentProps) {
-  const [formData, setFormData] = useState<Record<string, string>>(() => {
-    // Pre-fill from pre-process result if available
-    const initial: Record<string, string> = {};
-    if (preProcessResult) {
-      for (const [key, val] of Object.entries(preProcessResult)) {
-        if (val !== null && val !== undefined) {
-          initial[key] = String(val);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit() {
+    setLoading(true);
+    try {
+      // Example: update the record via API
+      const res = await fetch(
+        `/api/data/${context.objectApiName}/${context.recordId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            /* your updates */
+          }),
         }
-      }
+      );
+      if (!res.ok) throw new Error("Update failed");
+      onComplete({ success: true });
+    } catch (err) {
+      onError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setLoading(false);
     }
-    return initial;
-  });
-
-  function handleChange(fieldApiName: string, value: string) {
-    setFormData((prev) => ({ ...prev, [fieldApiName]: value }));
-  }
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    onSubmit(formData);
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-      <h2 style={{ margin: 0, fontSize: "18px" }}>Custom Process Form</h2>
-
-      {fields.map((field) => (
-        <div key={field.api_name}>
-          <label style={{ display: "block", marginBottom: "4px", fontSize: "14px", fontWeight: 500 }}>
-            {field.name}
-          </label>
-          <input
-            type="text"
-            value={formData[field.api_name] ?? ""}
-            onChange={(e) => handleChange(field.api_name, e.target.value)}
-            style={{
-              width: "100%",
-              padding: "8px 12px",
-              borderRadius: "6px",
-              border: "1px solid #d1d5db",
-              fontSize: "14px",
-            }}
-          />
-        </div>
-      ))}
-
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "8px" }}>
-        <button
-          type="button"
-          onClick={onCancel}
-          style={{
-            padding: "8px 16px",
-            borderRadius: "6px",
-            border: "1px solid #d1d5db",
-            background: "white",
-            cursor: "pointer",
-          }}
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          style={{
-            padding: "8px 16px",
-            borderRadius: "6px",
-            border: "none",
-            background: "#7c3aed",
-            color: "white",
-            cursor: "pointer",
-          }}
-        >
-          Submit
-        </button>
-      </div>
-    </form>
+    <div>
+      <h2>Process: {context.processApiName}</h2>
+      <p>Record: {record.name ?? context.recordId}</p>
+      <button onClick={handleSubmit} disabled={loading}>
+        {loading ? "Processing..." : "Submit"}
+      </button>
+      <button onClick={onCancel}>Cancel</button>
+    </div>
   );
 }
