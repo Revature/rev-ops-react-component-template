@@ -58,3 +58,29 @@ If a Python pre-process ran before this component, its return value is in `prePr
 ```tsx
 const options = preProcessResult?.available_options ?? [];
 ```
+
+## Wizard Workflow
+
+You are inside a **cloud IDE** that is part of a wizard for building components. Here's how the overall flow works:
+
+1. **Step 0 — Metadata**: Admin sets the component name, API name, and description
+2. **Step 1 — Code Editor** (you are here): Admin writes the component code in this IDE
+3. **Step 2 — Compile & Save**: The platform compiles the code with esbuild and saves it
+
+### How to sync code back to the platform
+
+After writing or editing code, the admin must **sync** it back to the Rev-Ops platform:
+
+- **Option A — VS Code Extension**: Click the **"Sync Code"** button in the Rev-Ops sidebar panel (left side of the IDE). This is the recommended approach.
+- **Option B — Terminal command**: Run `bash sync.sh` in the terminal. This reads the project files and sends them to the backend.
+
+After syncing, the admin can:
+- **Preview** the component (Preview tab in the wizard) to see it rendered with mock data
+- **Proceed to Compile & Save** to finalize the component
+
+### Important workflow notes
+
+- Code changes are NOT automatically synced — the admin must explicitly sync
+- The Preview tab compiles the code temporarily and renders it with mock props
+- The final Compile & Save step creates the production bundle
+- If the admin asks you to "sync" or "save", remind them to click Sync Code or run `bash sync.sh`
